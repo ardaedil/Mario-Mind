@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: mariomind
+Version: 0.1.0
+Summary: Experimental RL lab for Mario World 1-1
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.24
+Requires-Dist: torch>=2.2
+Requires-Dist: gymnasium>=0.29
+Requires-Dist: opencv-python>=4.8
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: pandas>=2.0
+Requires-Dist: pyyaml>=6.0
