@@ -1,29 +1,32 @@
 from __future__ import annotations
 
 import argparse
-import csv
 from pathlib import Path
 
-
-def _write_placeholder_png(path: Path, title: str, points: list[tuple[float, float]]) -> None:
-    # Minimal placeholder artifact for dependency-free smoke tests.
-    content = f"{title}\n" + "\n".join(f"{x},{y}" for x, y in points)
-    path.write_text(content, encoding="utf-8")
+import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def make_plots(metrics_csv: str, output_dir: str = "results/plots") -> None:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    with open(metrics_csv, "r", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+    df = pd.read_csv(metrics_csv)
 
-    def series(y_key: str) -> list[tuple[float, float]]:
-        return [(float(r["episode"]), float(r.get(y_key, 0.0) or 0.0)) for r in rows]
-
-    _write_placeholder_png(out / "reward_curve.png", "Episode Reward", series("reward"))
-    _write_placeholder_png(out / "max_x_curve.png", "Max X Position", series("max_x"))
-    _write_placeholder_png(out / "loss_curve.png", "Training Loss", series("loss"))
-    _write_placeholder_png(out / "epsilon_curve.png", "Epsilon", series("epsilon"))
+    plots = {
+        "reward_curve.png": ("episode", "reward", "Episode Reward"),
+        "max_x_curve.png": ("episode", "max_x", "Max X Position"),
+        "loss_curve.png": ("episode", "loss", "Training Loss"),
+        "epsilon_curve.png": ("episode", "epsilon", "Epsilon"),
+    }
+    for filename, (x, y, title) in plots.items():
+        plt.figure(figsize=(8, 4))
+        plt.plot(df[x], df[y])
+        plt.title(title)
+        plt.xlabel(x)
+        plt.ylabel(y)
+        plt.tight_layout()
+        plt.savefig(out / filename)
+        plt.close()
 
 
 def main() -> None:

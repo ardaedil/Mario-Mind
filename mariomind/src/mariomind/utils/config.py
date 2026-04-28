@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
-import json
+
+import yaml
 
 
 @dataclass
@@ -31,23 +32,14 @@ class TrainConfig:
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:
-    text = Path(path).read_text(encoding="utf-8")
-    try:
-        import yaml
-
-        return yaml.safe_load(text)
-    except Exception:
-        return json.loads(text)
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 def save_yaml(path: str | Path, data: dict[str, Any]) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    try:
-        import yaml
-
-        Path(path).write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-    except Exception:
-        Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, sort_keys=False)
 
 
 def to_dict(cfg: TrainConfig) -> dict[str, Any]:
