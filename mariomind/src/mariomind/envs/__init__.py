@@ -1,3 +1,3 @@
-from .dummy_env import DummyEnvConfig, DummyPlatformerEnv
+from .mario_env import MarioEnv, MarioEnvConfig
 
-__all__ = ["DummyPlatformerEnv", "DummyEnvConfig"]
+__all__ = ["MarioEnv", "MarioEnvConfig"]

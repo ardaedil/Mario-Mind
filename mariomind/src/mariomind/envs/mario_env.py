@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import importlib
+
+import gymnasium as gym
+import numpy as np
 
 from .action_spaces import get_action_space_config
-from .compat import reset_compat, step_compat
 from .reward_functions import RewardFn, build_reward_function
+from .wrappers import FrameStackWrapper, PreprocessObservationWrapper
 
 
 @dataclass
@@ -31,24 +33,16 @@ class MarioEnv:
         self.max_x = 0.0
         self.time_alive = 0
 
-    def _build_env(self):
-        if importlib.util.find_spec("gymnasium") is None:
-            raise RuntimeError(
-                "Missing dependency 'gymnasium'. Install Gym/Gymnasium and your Mario env package. "
-                "Example: pip install gymnasium gym-super-mario-bros nes-py"
-            )
-
-        gym = importlib.import_module("gymnasium")
-        wrappers = importlib.import_module("mariomind.envs.wrappers")
+    def _build_env(self) -> gym.Env:
         try:
             env = gym.make(self.cfg.env_id, render_mode=self.cfg.render_mode)
-        except Exception as exc:
+        except Exception as exc:  # graceful error path for missing local env
             raise RuntimeError(
                 "Could not create Mario env. Install/enable your local Gym-compatible Mario package "
                 f"and verify env id '{self.cfg.env_id}'. Original error: {exc}"
             ) from exc
-        env = wrappers.PreprocessObservationWrapper(env)
-        env = wrappers.FrameStackWrapper(env, stack_size=self.cfg.frame_stack)
+        env = PreprocessObservationWrapper(env)
+        env = FrameStackWrapper(env, stack_size=self.cfg.frame_stack)
         return env
 
     @property
@@ -60,17 +54,7 @@ class MarioEnv:
         return len(self.action_cfg.actions)
 
     def reset(self, seed: int | None = None):
-        if seed is None:
-            obs, info = reset_compat(self._env)
-        else:
-            try:
-                out = self._env.reset(seed=seed)
-                if isinstance(out, tuple) and len(out) == 2:
-                    obs, info = out
-                else:
-                    obs, info = out, {}
-            except TypeError:
-                obs, info = reset_compat(self._env)
+        obs, info = self._env.reset(seed=seed)
         self.prev_info = info
         self.episode_reward = 0.0
         self.max_x = float(info.get("x_pos", 0.0))
@@ -83,9 +67,9 @@ class MarioEnv:
         terminated = False
         truncated = False
         info = {}
-        obs = None
+        obs: np.ndarray | None = None
         for _ in range(self.cfg.frame_skip):
-            obs, env_reward, terminated, truncated, info = step_compat(self._env, mapped_action)
+            obs, env_reward, terminated, truncated, info = self._env.step(mapped_action)
             total_env_reward += env_reward
             if terminated or truncated:
                 break

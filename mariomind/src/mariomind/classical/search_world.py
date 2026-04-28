@@ -13,8 +13,8 @@ class SearchWorld:
         self.length = length
         self.start = Node(0)
         self.goal = Node(length - 1)
-        self.gaps = {5, 12} if gaps is None else gaps
-        self.blocked = {9} if blocked is None else blocked
+        self.gaps = gaps or {5, 12}
+        self.blocked = blocked or {9}
 
     def neighbors(self, node: Node) -> list[Node]:
         moves = [node.x + 1, node.x + 2]
