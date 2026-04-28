@@ -7,7 +7,6 @@ import importlib
 
 from .action_spaces import get_action_space_config
 from .compat import reset_compat, step_compat
-from .mario_dependency import INSTALL_GUIDANCE, missing_mario_modules
 from .reward_functions import RewardFn, build_reward_function
 
 
@@ -33,31 +32,21 @@ class MarioEnv:
         self.time_alive = 0
 
     def _build_env(self):
-        missing = missing_mario_modules()
-        if missing:
-            raise RuntimeError(f"Missing modules: {', '.join(missing)}\n{INSTALL_GUIDANCE}")
+        if importlib.util.find_spec("gymnasium") is None:
+            raise RuntimeError(
+                "Missing dependency 'gymnasium'. Install Gym/Gymnasium and your Mario env package. "
+                "Example: pip install gymnasium gym-super-mario-bros nes-py"
+            )
 
-        gym_super_mario_bros = importlib.import_module("gym_super_mario_bros")
-        JoypadSpace = importlib.import_module("nes_py.wrappers").JoypadSpace
-        actions_mod = importlib.import_module("gym_super_mario_bros.actions")
+        gym = importlib.import_module("gymnasium")
         wrappers = importlib.import_module("mariomind.envs.wrappers")
-
-        if self.cfg.action_space == "RIGHT_ONLY":
-            movement = actions_mod.RIGHT_ONLY
-        elif self.cfg.action_space == "SIMPLE_MOVEMENT":
-            movement = actions_mod.SIMPLE_MOVEMENT
-        else:  # CUSTOM_SMALL_ACTION_SPACE
-            movement = actions_mod.SIMPLE_MOVEMENT[:3]
-
-        if self.cfg.render_mode is None:
-            env = gym_super_mario_bros.make(self.cfg.env_id)
-        else:
-            try:
-                env = gym_super_mario_bros.make(self.cfg.env_id, render_mode=self.cfg.render_mode)
-            except TypeError:
-                env = gym_super_mario_bros.make(self.cfg.env_id)
-
-        env = JoypadSpace(env, movement)
+        try:
+            env = gym.make(self.cfg.env_id, render_mode=self.cfg.render_mode)
+        except Exception as exc:
+            raise RuntimeError(
+                "Could not create Mario env. Install/enable your local Gym-compatible Mario package "
+                f"and verify env id '{self.cfg.env_id}'. Original error: {exc}"
+            ) from exc
         env = wrappers.PreprocessObservationWrapper(env)
         env = wrappers.FrameStackWrapper(env, stack_size=self.cfg.frame_stack)
         return env
@@ -89,7 +78,7 @@ class MarioEnv:
         return obs, info
 
     def step(self, action_idx: int):
-        mapped_action = action_idx
+        mapped_action = self.action_cfg.actions[action_idx]
         total_env_reward = 0.0
         terminated = False
         truncated = False
