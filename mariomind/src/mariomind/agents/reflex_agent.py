@@ -16,6 +16,9 @@ class ReflexAgent(BaseAgent):
         self.steps = 0
 
     def select_action(self, state: np.ndarray, info: dict | None = None) -> int:
+        state = np.asarray(state)
+        info = info or {}
+
         self.steps += 1
         if self.steps % self.jump_period == 0:
             return self.jump_idx
