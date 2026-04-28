@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from importlib.util import find_spec
 from pathlib import Path
 import random
 
@@ -11,8 +12,21 @@ from mariomind.agents.always_right_agent import AlwaysRightAgent
 from mariomind.agents.random_agent import RandomAgent
 from mariomind.agents.reflex_agent import ReflexAgent
 from mariomind.envs.dummy_env import DummyEnvConfig, DummyPlatformerEnv
-from mariomind.envs.mario_dependency import INSTALL_GUIDANCE, missing_mario_modules
 from mariomind.utils.seeding import set_seed
+
+INSTALL_GUIDANCE = (
+    "Missing Mario dependencies. Install with:\n"
+    "  pip install gymnasium gym-super-mario-bros nes-py opencv-python\n"
+    "Then rerun: python scripts/smoke_test_mario_env.py --env-id SuperMarioBros-1-1-v0 --action-space right_only"
+)
+
+
+def _has_module(name: str) -> bool:
+    try:
+        return find_spec(name) is not None
+    except ModuleNotFoundError:
+        return False
+
 
 def _map_action_space(name: str) -> str:
     mapping = {
@@ -37,7 +51,8 @@ def build_env(args):
             )
         )
 
-    missing = missing_mario_modules()
+    required = ["gym_super_mario_bros", "nes_py", "gym_super_mario_bros.actions", "gymnasium"]
+    missing = [m for m in required if not _has_module(m)]
     if missing:
         raise RuntimeError(f"Missing modules: {', '.join(missing)}\n{INSTALL_GUIDANCE}")
 

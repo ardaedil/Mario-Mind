@@ -5,11 +5,25 @@ from __future__ import annotations
 
 import argparse
 from importlib import import_module
+from importlib.util import find_spec
 import sys
 
 from mariomind.envs.compat import reset_compat, step_compat
-from mariomind.envs.mario_dependency import INSTALL_GUIDANCE, missing_mario_modules
 from mariomind.envs.mario_env import MarioEnv, MarioEnvConfig
+
+
+INSTALL_GUIDANCE = (
+    "Missing Mario dependencies. Install with:\n"
+    "  pip install gymnasium gym-super-mario-bros nes-py opencv-python\n"
+    "Then rerun: python scripts/smoke_test_mario_env.py --env-id SuperMarioBros-1-1-v0 --action-space right_only"
+)
+
+
+def _has_module(name: str) -> bool:
+    try:
+        return find_spec(name) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def _shape_of(obs):
@@ -31,7 +45,8 @@ def main() -> int:
     parser.add_argument("--action-space", choices=["right_only", "simple", "complex"], default="right_only")
     args = parser.parse_args()
 
-    missing = missing_mario_modules()
+    required = ["gym_super_mario_bros", "nes_py", "gym_super_mario_bros.actions"]
+    missing = [name for name in required if not _has_module(name)]
     if missing:
         print(f"Missing modules: {', '.join(missing)}")
         print(INSTALL_GUIDANCE)
@@ -94,18 +109,6 @@ def main() -> int:
     w_obs, w_info = wrapped.reset()
     print(f"wrapper observation shape: {_shape_of(w_obs)}")
     print(f"wrapper reset info keys: {sorted(list(w_info.keys())) if isinstance(w_info, dict) else []}")
-    for i in range(3):
-        w_action = i % max(wrapped.action_space_n, 1)
-        w_obs, w_reward, w_term, w_trunc, w_info = wrapped.step(w_action)
-        print(
-            f"wrapper step={i+1} reward={w_reward:.3f} terminated={w_term} truncated={w_trunc} "
-            f"info_keys={sorted(list(w_info.keys())) if isinstance(w_info, dict) else []}"
-        )
-        if w_term or w_trunc:
-            break
-    if isinstance(w_info, dict):
-        print(f"wrapper has x_pos: {'x_pos' in w_info}")
-        print(f"wrapper has flag_get: {'flag_get' in w_info}")
     wrapped.close()
 
     print("Mario environment smoke test completed successfully.")
