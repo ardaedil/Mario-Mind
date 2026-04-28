@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-DEFAULT_GAPS = set()
-DEFAULT_BLOCKED = set()
-
 
 @dataclass(frozen=True)
 class Node:
@@ -16,8 +13,8 @@ class SearchWorld:
         self.length = length
         self.start = Node(0)
         self.goal = Node(length - 1)
-        self.gaps = set(DEFAULT_GAPS if gaps is None else gaps)
-        self.blocked = set(DEFAULT_BLOCKED if blocked is None else blocked)
+        self.gaps = {5, 12} if gaps is None else gaps
+        self.blocked = {9} if blocked is None else blocked
 
     def neighbors(self, node: Node) -> list[Node]:
         moves = [node.x + 1, node.x + 2]
