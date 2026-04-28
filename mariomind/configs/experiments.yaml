@@ -1,0 +1,6 @@
+agent_type: [random, always_right, reflex, dqn, ddqn]
+frame_stack: [1, 2, 4]
+reward_function: [sparse, progress_only, progress_death, default]
+action_space: [RIGHT_ONLY, SIMPLE_MOVEMENT, CUSTOM_SMALL_ACTION_SPACE]
+epsilon_decay_steps: [10000, 50000, 100000]
+replay_buffer_size: [5000, 20000, 50000]
